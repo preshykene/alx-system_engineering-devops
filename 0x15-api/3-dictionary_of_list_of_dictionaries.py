@@ -1,26 +1,38 @@
 #!/usr/bin/python3
-# csv exported
+"""
+Request from API; Return TODO list progress of all employees
+Export this data to JSON
+"""
 import json
-from requests import get
-from sys import argv
+import requests
 
 
-def jsonWrite():
-    """writes to csv"""
-    data = get('https://jsonplaceholder.typicode.com/users').json()
-    ids = [(dic.get('id'), dic.get('username')) for dic in data]
-    dumped = {}
-    for person in ids:
-        data = get(
-            'https://jsonplaceholder.typicode.com/todos?userId={}'.format(
-                person[0])).json()
-        ordered = [{"task": line.get('title'), "completed":
-                    line.get('completed'), "username":
-                    person[1]} for line in data]
-        dumped[person[0]] = ordered
-    with open('todo_all_employees.json', 'w') as f:
-        json.dump(dumped, f)
+def all_to_json():
+    """return API data"""
+    USERS = []
+    userss = requests.get("http://jsonplaceholder.typicode.com/users")
+    for u in userss.json():
+        USERS.append((u.get('id'), u.get('username')))
+    TASK_STATUS_TITLE = []
+    todos = requests.get("http://jsonplaceholder.typicode.com/todos")
+    for t in todos.json():
+        TASK_STATUS_TITLE.append((t.get('userId'),
+                                  t.get('completed'),
+                                  t.get('title')))
+
+    """export to json"""
+    data = dict()
+    for u in USERS:
+        t = []
+        for task in TASK_STATUS_TITLE:
+            if task[0] == u[0]:
+                t.append({"task": task[2], "completed": task[1],
+                          "username": u[1]})
+        data[str(u[0])] = t
+    filename = "todo_all_employees.json"
+    with open(filename, "w") as f:
+        json.dump(data, f, sort_keys=True)
 
 
 if __name__ == "__main__":
-    jsonWrite()
+    all_to_json()
